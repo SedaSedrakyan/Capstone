@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<h1 align=center> Let’s Make a Deal </h1>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title> Monty Hall Problem </title>
+		<link rel="stylesheet" type="text/css" href="Transition.css">
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+		<meta charset="UTF-8">
+		<meta name="keywords" content=" Transition " >
+	</head>
+	<body>
+	<div class="container">
+		<div class="general">
+			<div class="left item"><img class='box-img' src='box.png' /></div>
+			<div class="middle item"><img class='box-img' src='box.png' /></div>
+			<div class="right item"><img class='box-img' src='box.png' /></div>
+		</div>
+		<div class="stats">
+			One by one:<br/> (Clicks: <b id='manual_all'></b> / Win: <b id='manual_win'></b>)
+			<div id="progress0" class="progress-bar"><div class='win-rate'></div></div>
+		</div><br/>
+		
+		<div id="action-buttons">
+			<button id="try-again" onclick="resetAll()">Reset</button>
+			<button id="try-again" onclick="resetStat()">Reset Stat</button>
+		</div>
+		
+		<button onclick="simulateGame(100, true, 1)">100 with change</button>
+		<button onclick="simulateGame(100, false, 2)">100 save choose</button>
+		<br/><br/>
+		<div class="stats">
+			Save choice:<br/>
+			<div id="progress1" class="progress-bar"><div class='win-rate'></div></div>
+			Change choice:<br/>
+			<div id="progress2" class="progress-bar"><div class='win-rate'></div></div><br/>
+		</div>
+	</div>
+
+		<script>
+			function playMontyHall(toSwitch) {
+				let carIsIn = Math.floor(Math.random() * 3);
+				let doorSelected = Math.floor(Math.random() * 3);
+				let revealedDoor = [0,1,2].find((door) => door !== carIsIn && door !== doorSelected);
+				if(toSwitch){
+					return carIsIn === [0,1,2].find((door) => door !== doorSelected && door !== revealedDoor)
+				}
+				else {
+					return carIsIn === doorSelected
+				}
+			}
+
+			function simulateGame(num, toSwitch, progress) {
+				let gamesWon = 0;
+				for(let i = 0; i < num; i++){
+					gamesWon += playMontyHall(toSwitch)
+				}
+				showProgressBar(gamesWon, num, progress);
+				return gamesWon; 
+			}
+			
+			function showProgressBar(win, all, progress) {
+				var rate = ((win / all) * 100) || 0;
+				document.querySelector("#progress"+ progress + " .win-rate").style.width = rate + "%";
+				document.querySelector("#progress"+ progress + " .win-rate").innerHTML = rate.toFixed(2) + "%"
+			}
+		
+		
+			let prize_image = 'pot-of-gold.png';
+			let rock_image 	= 'rock.png';
+			let game_finished = false;	
+			let one_opened  = false;
+			let first_click = false; 
+			let all_clicked = 0; 
+			let win_count 	= 0; 			
+		
+			var items = document.querySelectorAll('.item');
+			for (item of items) {
+				item.addEventListener('click', function(e){
+				 
+					let elems = document.querySelectorAll('.item');
+					let is_winning = this.getAttribute('data-win') == 0 ? false : true;
+					let is_finish = Math.floor(Math.random() * 2);
+					 
+					if(is_winning || !is_finish) {
+						  for (elem of elems) {
+						   if(elem != this && !first_click) {
+							 if(elem.getAttribute('data-win') == 0 && !one_opened) {
+									elem.classList.add('item-open');
+									one_opened = true;
+							   }
+						   } else if(first_click) {
+							  if(elem == this) {
+									elem.classList.add('item-open');
+								} else if ( !elem.classList.contains('item-open') ) {
+								  openWithTimeout(elem);
+								}
+						   }
+						}
+						
+						if(first_click && !game_finished) {
+							game_finished = true;
+							manualCountProgress( (this.getAttribute('data-win') == 1) );
+						}
+						
+						first_click = true;
+					} else {
+						//only if false in first click
+						for (elem of elems) {
+							if(elem == this) {
+    							elem.classList.add('item-open');
+    						} else {
+    						  openWithTimeout(elem);
+    						}
+					   }
+					   
+						if(!game_finished) {
+							game_finished = true;
+							manualCountProgress( false );
+						}
+					}
+					
+					 
+				});
+			}
+			
+			function openWithTimeout(elem) {
+				setTimeout(function(e){
+					e.classList.add('item-open');		
+				}, 500, elem);
+			}
+			
+			function initPrizes() {
+				let items = document.querySelectorAll('.item');
+				let goldIsIn = Math.floor(Math.random() * 3);
+				
+				for (let i in items) {
+					if(!(items[i] instanceof Element)) continue;
+					items[i].querySelector('.prize') && items[i].querySelector('.prize').remove();
+				 	let img = document.createElement("img");
+						img.className = 'prize';
+						img.src = (i == goldIsIn) ? prize_image : rock_image;
+					items[i].setAttribute("data-win", (i == goldIsIn) ? 1 : 0);
+					items[i].prepend(img);
+				}
+			}
+			initPrizes();
+			function resetAll() {
+				game_finished = false;
+				first_click = false; 
+				one_opened = false;
+				var items = document.querySelectorAll('.item');
+				for (item of items) {
+					item.classList.remove('item-open');
+				}
+				setTimeout(function () { 
+					initPrizes();
+					}, 500);
+			}
+			
+			
+			function manualCountProgress(isTrue){
+				all_clicked++;
+				win_count += isTrue ? 1 : 0;
+				showProgressBar(win_count, all_clicked, 0);
+				
+				document.querySelector("#manual_all").innerHTML = all_clicked;
+				document.querySelector("#manual_win").innerHTML = win_count;
+			}
+			
+			function resetStat() {
+				all_clicked = 0; win_count = 0; 
+				
+				document.querySelector("#manual_all").innerHTML = all_clicked;
+				document.querySelector("#manual_win").innerHTML = win_count;
+				showProgressBar(win_count, all_clicked, 0);
+			}
+			
+		</script>
+	</body>
+</html>
